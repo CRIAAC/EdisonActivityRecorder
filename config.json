@@ -1,0 +1,44 @@
+{
+  "edisons" : [
+  {
+    "server": {
+      "host": "edison1.liara.local",
+      "port": 22,
+      "userName": "root",
+      "password": "edison"
+    },
+    "idleTimeOut": 10000,
+    "file_to_transfer": "D:\\Users\\jvandewync\\Google Drive\\Edison\\RTIMULibCal\\Julien\\bras droit\\RTIMULib.ini",
+    "verbose": false,
+    "debug": false,
+
+    "msg":
+    {
+      "send": null
+    }
+  },
+
+  {
+    "server": {
+      "host": "edison2.liara.local",
+      "port": 22,
+      "userName": "root",
+      "password": "edison"
+    },
+    "idleTimeOut": 10000,
+    "file_to_transfer": "D:\\Users\\jvandewync\\Google Drive\\Edison\\RTIMULibCal\\Julien\\bras gauche\\RTIMULib.ini",
+    "verbose": false,
+    "debug": false,
+
+    "msg":
+    {
+      "send": null
+    }
+  }],
+  "mongo" :
+  {
+    "host" : "127.0.0.1",
+    "port" : "27017",
+    "database" :"datasets"
+  }
+}

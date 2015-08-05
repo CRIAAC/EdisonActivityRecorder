@@ -1,0 +1,24 @@
+{
+  "name": "zmqclient",
+  "version": "1.0.0",
+  "description": "A basic ZMQClient for Julien",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "CRIAAC",
+  "license": "MIT",
+  "dependencies": {
+    "alertify-js": "^0.3.12",
+    "async": "^1.4.0",
+    "commander": "^2.8.1",
+    "moment": "^2.10.6",
+    "mongodb": "^2.0.39",
+    "msgpack5": "^3.1.0",
+    "restify": "^3.0.3",
+    "scp2": "^0.2.2",
+    "simple-statistics": "^0.9.2",
+    "ssh2shell": "^1.4.1",
+    "zmq": "^2.12.0"
+  }
+}

@@ -1,0 +1,17 @@
+.colorful{
+	background: #4285f4;
+	color: #fff;
+	margin-top: 1%;
+}
+.recordForm{
+	text-align: center;
+}
+.red{
+	background-color: #f44336;
+	height: 60px;
+	font-size: 16px;
+	line-height: 60px;
+	padding: 0 10px;
+	color: white;
+	transition: height 0.2s;
+}
