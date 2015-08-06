@@ -30,7 +30,7 @@ server.get(/\/(css|js|img|bower_components)\/?.*/, restify.serveStatic({director
 server.post("/",function(req,res,next){
 	if(req.params.start && req.params.activityName)
 	{
-        spouter = new Spouter(req.body.activityName,frequency);
+        spouter = new Spouter(req.params.activityName,frequency);
         res.send(200,{status : 200});
 	}
 	else if(req.params.stop)

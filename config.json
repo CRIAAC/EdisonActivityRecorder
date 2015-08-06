@@ -8,7 +8,7 @@
       "password": "edison"
     },
     "idleTimeOut": 10000,
-    "file_to_transfer": "D:\\Users\\jvandewync\\Google Drive\\Edison\\RTIMULibCal\\Julien\\bras droit\\RTIMULib.ini",
+    "file_to_transfer": "D:\\Users\\jvandewync\\Google Drive\\Edison\\RTIMULibCal\\Julien\\bras gauche\\RTIMULib.ini",
     "verbose": false,
     "debug": false,
 
@@ -26,7 +26,7 @@
       "password": "edison"
     },
     "idleTimeOut": 10000,
-    "file_to_transfer": "D:\\Users\\jvandewync\\Google Drive\\Edison\\RTIMULibCal\\Julien\\bras gauche\\RTIMULib.ini",
+    "file_to_transfer": "D:\\Users\\jvandewync\\Google Drive\\Edison\\RTIMULibCal\\Julien\\bras droit\\RTIMULib.ini",
     "verbose": false,
     "debug": false,
 

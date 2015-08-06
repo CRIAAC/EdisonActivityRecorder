@@ -22,7 +22,7 @@ class Init{
 
         this.homeDir = homeDir || "/root/CRIAAC/";
         this.server = server || "jvandewync.liara.local";
-        this.frequency = frequency || 50;
+        this.frequency = frequency || 20;
 
         if(config != undefined && config.hasOwnProperty("edisons")){
             config['edisons'].forEach(function(element){
