@@ -11,8 +11,11 @@ var frequency = 50;
 
 var server = restify.createServer({
   name: 'myapp',
-  version: '1.0.0'
+  version: '1.0.0',
+    key: fs.readFileSync('./ssl/server.key'),
+    certificate: fs.readFileSync('./ssl/server.crt')
 });
+
 
 server.use(restify.acceptParser(server.acceptable));
 server.use(restify.queryParser());
@@ -35,7 +38,7 @@ server.post("/",function(req,res,next){
 	}
 	else if(req.params.stop)
 	{
-        spouter = new Spouter("trash".activityName,frequency);
+        spouter = new Spouter("trash",frequency);
         res.send(200,{status : 200});
 	}
 
