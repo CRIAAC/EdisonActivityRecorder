@@ -2,13 +2,13 @@
   "edisons" : [
   {
     "server": {
-      "host": "edison1.liara.local",
+      "host": "192.168.1.101",
       "port": 22,
       "userName": "root",
       "password": "edison"
     },
-    "idleTimeOut": 10000,
-    "file_to_transfer": "D:\\Users\\jvandewync\\Google Drive\\Edison\\RTIMULibCal\\Julien\\bras gauche\\RTIMULib.ini",
+    "idleTimeOut": 15000,
+    "file_to_transfer": "D:\\Users\\Baptiste\\Google Drive\\Edison\\RTIMULibCal\\Baptiste\\bras_droit\\RTIMULib.ini",
     "verbose": false,
     "debug": false,
 
@@ -20,13 +20,13 @@
 
   {
     "server": {
-      "host": "edison2.liara.local",
+      "host": "192.168.1.102",
       "port": 22,
       "userName": "root",
       "password": "edison"
     },
-    "idleTimeOut": 10000,
-    "file_to_transfer": "D:\\Users\\jvandewync\\Google Drive\\Edison\\RTIMULibCal\\Julien\\bras droit\\RTIMULib.ini",
+    "idleTimeOut": 15000,
+    "file_to_transfer": "D:\\Users\\Baptiste\\Google Drive\\Edison\\RTIMULibCal\\Baptiste\\bras_gauche\\RTIMULib.ini",
     "verbose": false,
     "debug": false,
 

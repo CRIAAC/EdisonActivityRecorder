@@ -21,14 +21,14 @@ class Init{
     constructor(homeDir,server,frequency){
 
         this.homeDir = homeDir || "/root/CRIAAC/";
-        this.server = server || "jvandewync.liara.local";
+        this.server = server || "192.168.1.104";
         this.frequency = frequency || 20;
 
         if(config != undefined && config.hasOwnProperty("edisons")){
             config['edisons'].forEach(function(element){
                 element.msg = {
                     send : function(message){
-                        //console.log(message);
+                        console.log(message);
                     }
                 }
             });
@@ -61,7 +61,7 @@ class Init{
     ntpUpdate(edison,callback){
         edison.commands =
         [
-            "ntpdate -u jvandewync.liara.local"
+            "ntpdate -u 192.168.1.104"
         ];
 
         edison.onCommandComplete = function (command, response, sshObj) {
@@ -98,7 +98,7 @@ class Init{
             [
                 "kill -9 $(pidof 'publisher')", //prevent conflicts
                 "cd CRIAAC",
-                "rm nohup.out",
+                "rm nohup.out"
                 //"nohup ./publisher &"
                 //("at -f script.sh " + actual_date)
             ];

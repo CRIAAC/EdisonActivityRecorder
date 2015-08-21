@@ -10,6 +10,7 @@
     <link rel="import" href="bower_components/iron-flex-layout/iron-flex-layout.html">
 
       <script src="//cdnjs.cloudflare.com/ajax/libs/annyang/2.0.0/annyang.min.js"></script>
+
   	<script src="bower_components/jquery/dist/jquery.min.js"></script>
     <link rel="stylesheet" type="text/css" href="css/app.css">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,11 +21,15 @@
         <div>Activity recorder</div>
       </paper-toolbar>
       <div class="recordForm">
-        <paper-input id="activityLabel" auto-validate label="Your activity name here" pattern="^[a-zA-Z0-9]*$" error-message="Only letters and numbers"/></paper-input><br>
-        <paper-button id="startButton" raised class="colorful">Start</paper-button><br>
-  		  <paper-button id="stopButton" raised class="colorful">Stop</paper-button><br>
+        <paper-input id="activitiesLabel" auto-validate label="All your subactivities name here" pattern="^([a-zA-Z]+,)+$" error-message="Only letters and comma"/></paper-input><br>
+        <paper-input id="activitiesNumber" auto-validate label="Your iteration number here" pattern="^[0-9]*$" error-message="Only numbers"/></paper-input><br>
+        <paper-button id="startIterationButton" raised class="colorful">Start new iteration</paper-button><br>
+          <paper-button id="deleteLastIterationButton" raised class="colorful">Delete last iteration</paper-button><br>
+          <paper-button id="createNewActivityButton" raised class="colorful">Create a new activity</paper-button><br>
         <paper-toast id="toast" text="Invalid activity name"></paper-toast>
   	 </div>
+     <p id="currentActivityName"></p>
+     <p id="currentIterationValue"></p>
     </paper-header-panel>
     <script src="js/main.js"></script>
   </body>
