@@ -82,10 +82,11 @@ class Spouter{
     }
 
     stopRecording(){
+        this.recording = false;
+        this.dataResampled = {};
         this.coll.count(function(err, count){
             console.log(count);
         });
-        this.recording = false;
         delete this.coll;
         delete this.rawColl;
     }
