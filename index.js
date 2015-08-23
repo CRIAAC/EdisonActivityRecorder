@@ -39,12 +39,14 @@ spouter = new Spouter(frequency);
 server.post("/",function(req,res,next){
 	if(req.params.start && req.params.activityName)
 	{
-        spouter.changeCollection(req.params.activityName);
+        spouter.starRecordingActivity(req.params.activityName);
+        //spouter.changeCollection(req.params.activityName);
         res.send(200,{status : 200});
 	}
 	else if(req.params.stop)
 	{
-        spouter.changeCollection(undefined);
+        spouter.stopRecording();
+        //spouter.changeCollection(undefined);
         res.send(200,{status : 200});
 	}
 

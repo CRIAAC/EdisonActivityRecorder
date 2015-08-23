@@ -21,7 +21,8 @@ class Init{
     constructor(homeDir,server,frequency){
 
         this.homeDir = homeDir || "/root/CRIAAC/";
-        this.server = server || "192.168.1.104";
+        //this.server = server || "192.168.1.104";
+        this.server = server || config.recorder.server;
         this.frequency = frequency || 20;
 
         if(config != undefined && config.hasOwnProperty("edisons")){
@@ -61,7 +62,8 @@ class Init{
     ntpUpdate(edison,callback){
         edison.commands =
         [
-            "ntpdate -u 192.168.1.104"
+            //"ntpdate -u 192.168.1.104"
+            "ntpdate -u " + config.ntp.server
         ];
 
         edison.onCommandComplete = function (command, response, sshObj) {

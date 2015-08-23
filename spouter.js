@@ -14,6 +14,12 @@ class Spouter{
         this.frequency = frequency;
         this.dataResampled = {};
         MongoClient.connect('mongodb://'+ (config.mongo.host || 'localhost') + ':'+ (config.mongo.port || 27017) + '/' + config.mongo.database, this.mongoCallback.bind(this));
+        this.socket = zmq.socket("sub");
+        this.socket.connect("tcp://127.0.0.1:6666");
+        this.socket.subscribe("");
+        this.socket.on("message",this.zmqListener.bind(this));
+        setTimeout(this.insert_into_collections.bind(this), this.frequency);
+        this.recording = false;
     }
 
     deleteCollection(subactivities, iteration){
@@ -60,12 +66,37 @@ class Spouter{
         }.bind(this));
     }
 
+    starRecordingActivity(activity){
+        if(activity == undefined || activity == ""){
+            throw "Activity undefined";
+            return;
+        }
+        this.activity = activity;
+        this.coll = this.dataset.collection(this.activity);
+        this.rawColl = this.dataset.collection(this.activity + "_raw");
+        this.coll.drop(function(err,reply){
+            this.rawColl.drop(function(err,reply) {
+                this.recording = true;
+            }.bind(this));
+        }.bind(this));
+    }
+
+    stopRecording(){
+        this.coll.count(function(err, count){
+            console.log(count);
+        });
+        this.recording = false;
+        delete this.coll;
+        delete this.rawColl;
+    }
+
     mongoCallback(err,db){
         if (err) throw err;
         this.dataset = db;
     }
 
     zmqListener(topic,message){
+        if(!this.recording) return;
         if (message != undefined && this.dataset != undefined && this.rawColl != undefined) {
             var receivedString = msgpack.decode(message);
             receivedString[1] = moment(receivedString[1] / 1000).format("YYYY-MM-DD HH:mm:ss.SSS");
@@ -141,6 +172,7 @@ class Spouter{
     }
 
     insert_into_collections(){
+        if(!this.recording) return;
         var data_to_insert = {};
 
         var now = moment().toDate();
