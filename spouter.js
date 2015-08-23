@@ -18,7 +18,7 @@ class Spouter{
         this.socket.connect("tcp://127.0.0.1:6666");
         this.socket.subscribe("");
         this.socket.on("message",this.zmqListener.bind(this));
-        setTimeout(this.insert_into_collections.bind(this), this.frequency);
+
         this.recording = false;
     }
 
@@ -39,7 +39,7 @@ class Spouter{
         }
     }
 
-    changeCollection(activity){
+    /*changeCollection(activity){
         if(activity == undefined || activity == ""){
             this.coll.count(function(err, count){
                console.log(count);
@@ -64,12 +64,11 @@ class Spouter{
                 setTimeout(this.insert_into_collections.bind(this), this.frequency);
             }.bind(this));
         }.bind(this));
-    }
+    }*/
 
-    starRecordingActivity(activity){
+    startRecordingActivity(activity){
         if(activity == undefined || activity == ""){
             throw "Activity undefined";
-            return;
         }
         this.activity = activity;
         this.coll = this.dataset.collection(this.activity);
@@ -77,6 +76,7 @@ class Spouter{
         this.coll.drop(function(err,reply){
             this.rawColl.drop(function(err,reply) {
                 this.recording = true;
+                setTimeout(this.insert_into_collections.bind(this), this.frequency);
             }.bind(this));
         }.bind(this));
     }
