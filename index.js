@@ -13,7 +13,7 @@ var spouter;
 var frequency = 20;
 
 var server = restify.createServer({
-  name: 'myapp',
+  name: 'EdisonActivityRecorder',
   version: '1.0.0',
     key: fs.readFileSync('./ssl/server.key'),
     certificate: fs.readFileSync('./ssl/server.crt')
@@ -39,14 +39,12 @@ spouter = new Spouter(frequency);
 server.post("/",function(req,res,next){
 	if(req.params.start && req.params.activityName)
 	{
-        spouter.startRecordingActivity(req.params.activityName);
-        //spouter.changeCollection(req.params.activityName);
+        spouter.startRecordingActivity(req.params.subActivityName, req.params.subActivitiesIteration);
         res.send(200,{status : 200});
 	}
 	else if(req.params.stop)
 	{
         spouter.stopRecording();
-        //spouter.changeCollection(undefined);
         res.send(200,{status : 200});
 	}
 
@@ -56,9 +54,7 @@ server.post("/",function(req,res,next){
 });
 
 server.post("/delete/:id",function(req,res,next){
-    var iteration = req.params.id;
-    var subactivitiesName = req.params.subactivities;
-    spouter.deleteCollection(subactivitiesName, iteration);
+    spouter.deleteCollection(req.params.subactivities, req.params.id);
     res.send(200,{status : 200});
 });
 

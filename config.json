@@ -39,7 +39,9 @@
   {
     "host" : "127.0.0.1",
     "port" : "27017",
-    "database" :"datasets"
+    "database" :"datasets",
+    "datacollection" : "MakeCoffee",
+    "rawcollection" : "MakeCoffee_raw"
   },
   "ntp":
   {

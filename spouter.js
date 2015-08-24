@@ -1,6 +1,6 @@
 "use strict";
 
-var MongoClient = require('mongodb').MongoClient;
+var mongoose = require('mongoose');
 var zmq = require("zmq");
 var msgpack = require("msgpack5")();
 var moment = require("moment");
@@ -8,23 +8,66 @@ var ss = require('simple-statistics');
 
 var config = require("./config.json");
 
+var DataSchema = new Schema({
+    _id : mongoose.Schema.ObjectId,
+    subActivityName : {type: String, required: true},
+    index : {type : Number, required: true},
+    timestamp : {type: Date, required: true},
+    content: [{
+        yaw : {type : Number, required: true},
+        pitch : {type : Number, required: true},
+        roll : {type : Number, required: true},
+        accel_X : {type : Number, required: true},
+        accel_Y : {type : Number, required: true},
+        accel_Z : {type : Number, required: true},
+        gyro_X : {type : Number, required: true},
+        gyro_Y : {type : Number, required: true},
+        gyro_Z : {type : Number, required: true}
+    }]
+});
+var RawSchema = new Schema({
+    _id : mongoose.Schema.ObjectId,
+    subActivityName : {type: String, required: true},
+    index : {type : Number, required: true},
+    mac : {type : String, required: true},
+    timestamp_sent : {type: Date, required: true},
+    timestamp_received : {type: Date, required: true},
+    yaw : {type : Number, required: true},
+    pitch : {type : Number, required: true},
+    roll : {type : Number, required: true},
+    accel_X : {type : Number, required: true},
+    accel_Y : {type : Number, required: true},
+    accel_Z : {type : Number, required: true},
+    gyro_X : {type : Number, required: true},
+    gyro_Y : {type : Number, required: true},
+    gyro_Z : {type : Number, required: true}
+});
+DataSchema.set('collection', config.mongo.datacollection);
+RawSchema.set('collection', config.mongo.rawcollection);
+var RawModel = mongoose.model('Raw', RawSchema);
+var DataModel = mongoose.model('Data', DataSchema);
+
 class Spouter{
 
     constructor(frequency){
         this.frequency = frequency;
         this.dataResampled = {};
-        MongoClient.connect('mongodb://'+ (config.mongo.host || 'localhost') + ':'+ (config.mongo.port || 27017) + '/' + config.mongo.database, this.mongoCallback.bind(this));
+        mongoose.connect('mongodb://'+ (config.mongo.host || 'localhost') +':'+ (config.mongo.port || 27017) +'/'+config.mongo.database, function(err,db){
+            if (err) throw err;
+            this.dataset = db;
+        });
+        //MongoClient.connect('mongodb://'+ (config.mongo.host || 'localhost') + ':'+ (config.mongo.port || 27017) + '/' + config.mongo.database, this.mongoCallback.bind(this));
         this.socket = zmq.socket("sub");
         this.socket.connect("tcp://127.0.0.1:6666");
         this.socket.subscribe("");
         this.socket.on("message",this.zmqListener.bind(this));
-
         this.recording = false;
+
     }
 
     deleteCollection(subactivities, iteration){
         for(var i = 0; i < subactivities.length; i++) {
-            var collection = this.dataset.collection(subactivities[i] + "" + iteration);
+            /*var collection = this.dataset.collection(subactivities[i] + "" + iteration);
             var raw_collection = this.dataset.collection(subactivities[i] + "" + iteration + "_raw");
             collection.drop(function(err, res){
                 if(err){
@@ -35,6 +78,12 @@ class Spouter{
                 if(err){
                     console.err(err);
                 }
+            });*/
+            DataModel.remove({index: iteration}, function(err){
+                if(err) throw err;
+            });
+            RawModel.remove({index: iteration}, function(err){
+                if(err) throw err;
             });
         }
     }
@@ -66,35 +115,40 @@ class Spouter{
         }.bind(this));
     }*/
 
-    startRecordingActivity(activity){
+    startRecordingActivity(activity, iteration){
         if(activity == undefined || activity == ""){
             throw "Activity undefined";
         }
-        this.activity = activity;
-        this.coll = this.dataset.collection(this.activity);
-        this.rawColl = this.dataset.collection(this.activity + "_raw");
+        this.currentSubActivityName = activity;
+        this.currentSubActivityIteration = iteration;
+        this.recording = true;
+        setTimeout(this.insert_into_collections.bind(this), this.frequency);
+        /*this.coll = this.dataset.collection(this.currentSubActivityName);
+        this.rawColl = this.dataset.collection(this.currentSubActivityName + "_raw");
         this.coll.drop(function(err,reply){
             this.rawColl.drop(function(err,reply) {
                 this.recording = true;
                 setTimeout(this.insert_into_collections.bind(this), this.frequency);
             }.bind(this));
-        }.bind(this));
+        }.bind(this));*/
     }
 
     stopRecording(){
         this.recording = false;
         this.dataResampled = {};
-        this.coll.count(function(err, count){
+        /*this.coll.count(function(err, count){
             console.log(count);
         });
+        //this.coll = undefined;
+        //this.rawColl = undefined;
         delete this.coll;
-        delete this.rawColl;
+        delete this.rawColl;*/
     }
 
-    mongoCallback(err,db){
+    /*mongoCallback(err,db){
         if (err) throw err;
         this.dataset = db;
-    }
+    }*/
 
     zmqListener(topic,message){
         if(!this.recording) return;
@@ -127,7 +181,9 @@ class Spouter{
                 };
             }
 
-            var data ={
+            var data = new RawModel({
+                subActivityName: this.currentSubActivityName,
+                index: this.currentSubActivityIteration,
                 mac : receivedString[0],
                 timestamp_sent : moment(receivedString[1]).toDate(),
                 timestamp_received : moment().toDate(),
@@ -146,7 +202,7 @@ class Spouter{
                 magneto_X : magneto[0],
                 magneto_Y : magneto[1],
                 magneto_Z : magneto[2]
-            };
+            });
 
             this.dataResampled[receivedString[0]].yaw.push(pose[0]);
             this.dataResampled[receivedString[0]].pitch.push(pose[1]);
@@ -164,11 +220,14 @@ class Spouter{
             this.dataResampled[receivedString[0]].magneto_Y.push(magneto[1]);
             this.dataResampled[receivedString[0]].magneto_Z.push(magneto[2]);
 
-            this.rawColl.insertOne(data,function(err,doc){
+            data.save(function(err){
+                if(err) throw err;
+            });
+            /*this.rawColl.insertOne(data,function(err,doc){
                 if(err){
                     console.log(err);
                 }
-            });
+            });*/
         }
     }
 
@@ -231,18 +290,22 @@ class Spouter{
 
         }
 
-        var data = {
+        var data = new DataModel({
+            subActivityName : this.currentSubActivityName,
+            index : this.currentSubActivityIteration,
             timestamp : now,
             content : data_to_insert
-        };
+        });
 
+        data.save(function(err){
+            if(err) throw err;
+        });
 
-
-        this.coll.insertOne(data,function(err,doc){
+        /*this.coll.insertOne(data,function(err,doc){
             if(err){
                 console.log(err);
             }
-        });
+        });*/
 
         setTimeout(this.insert_into_collections.bind(this), this.frequency);
     }

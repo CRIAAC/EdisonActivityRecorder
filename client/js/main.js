@@ -54,6 +54,7 @@ document.addEventListener('WebComponentsReady', function () {
         };
 
         deleteLastIterationButton.onclick = function(){
+            if(currentIteration == 0) return;
             $.post("/delete/"+currentIteration, {subactivities: activitiesArray})
                 .done(function (data) {
                     if (data.status == 200) {
@@ -97,7 +98,7 @@ document.addEventListener('WebComponentsReady', function () {
             if (!startIterationButton.disabled) {
                 return;
             }
-            $.post("/", {start: true, activityName: activitiesArray[currentActivity] + "" + (currentIteration + 1)})
+            $.post("/", {start: true, subActivityName: activitiesArray[currentActivity], subActivitiesIteration: (currentIteration + 1)})
                 .done(function (data) {
                     if (data.status == 200) {
                         toast.text = "Record started";
