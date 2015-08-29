@@ -6,7 +6,6 @@ var SSH2Shell = require('ssh2shell');
 var Spouter = require('./spouter');
 var async = require("async");
 var moment = require("moment");
-
 var config = require("./config.json");
 var spouter;
 
@@ -20,9 +19,9 @@ class Init{
      */
     constructor(homeDir,server,frequency){
 
-        this.homeDir = homeDir || "/root/CRIAAC/";
-        //this.server = server || "192.168.1.104";
-        this.server = server || config.recorder.server;
+        //this.homeDir = homeDir || "/root/CRIAAC/";
+        this.homeDir = homeDir || "/home/edison/edisondatasender/";
+        this.server = server || config.server;
         this.frequency = frequency || 20;
 
         if(config != undefined && config.hasOwnProperty("edisons")){
@@ -34,7 +33,7 @@ class Init{
                 }
             });
 
-            async.each(config.edisons, this.initialize.bind(this),this.runPublisher.bind(this,config.edisons));
+            async.each(config.edisons, this.initialize.bind(this),this.runServer.bind(this,config.edisons));
         }
         else{
             throw new Error("Invalid configuration file.");
@@ -46,9 +45,7 @@ class Init{
             function (callback) {
                 callback(null, edison);
             },
-            this.ntpUpdate.bind(this),
-            this.makeScp.bind(this),
-            this.prepareRunPublisher.bind(this)
+            this.makeScp.bind(this)
         ],function(err,edison){
             if(err){
                 console.log(err);
@@ -57,27 +54,6 @@ class Init{
             }
             callback();
         });
-    }
-
-    ntpUpdate(edison,callback){
-        edison.commands =
-        [
-            //"ntpdate -u 192.168.1.104"
-            "ntpdate -u " + config.ntp.server
-        ];
-
-        edison.onCommandComplete = function (command, response, sshObj) {
-            if (command === ("ntpdate -u " + this.server)) {
-                if (response.indexOf("no server suitable for synchronization found") > -1) {
-                    throw new Error("Check the " + this.server + " wifi connectivity");
-                }
-                console.log("Time updated on: " + edison.server.host);
-                callback(null,edison);
-            }
-        }.bind(this);
-
-        var SSH = new SSH2Shell(edison);
-        SSH.connect();
     }
 
     makeScp(edison,callback){
@@ -95,41 +71,16 @@ class Init{
         });
     }
 
-    prepareRunPublisher(edison,callback){
-        edison.commands =
-            [
-                "kill -9 $(pidof 'publisher')", //prevent conflicts
-                "cd CRIAAC",
-                "rm nohup.out"
-                //"nohup ./publisher &"
-                //("at -f script.sh " + actual_date)
-            ];
-
-        edison.onCommandComplete = function (command, response, sshObj) {
-
-            if (command == "rm nohup.out") {
-                console.log("Edison is ready : " + edison.server.host);
-                callback(null,edison);
-            }
-        }.bind(this);
-
-        var SSH = new SSH2Shell(edison);
-        SSH.connect();
-    }
-
-    runPublisher(edisons){
+    runServer(edisons){
         async.each(edisons,function(edison,callback){
             edison.commands =
                 [
-                    "cd CRIAAC",
-                    "nohup ./publisher &"
-                    //("at -f script.sh " + actual_date)
+                    "cd /home/edison/edisondatasender"
                 ];
-
             edison.onCommandComplete = function (command, response, sshObj) {
 
-                if (command == /*("at -f script.sh " + actual_date)*/ "nohup ./publisher &") {
-                    console.log("publisher is running on: " + edison.server.host);
+                if (command == "cd /home/edison/edisondatasender") {
+                    console.log("server is running on: " + edison.server.host);
                     callback(edison);
                 }
             }.bind(this);
@@ -152,7 +103,6 @@ class Init{
             },
             activity: function (activity_name) {
                 console.log(activity_name + ".log created");
-                spouter = new Spouter(activity_name,self.frequency);
             }
         };
 
@@ -161,19 +111,18 @@ class Init{
             repl_zmq.ignoreUndefined = true;
             repl_zmq.context.cleanup = handler.cleanup;
             repl_zmq.context.activity = handler.activity;
-            spouter = new Spouter("trash",self.frequency);
         }, 2000);
     }
 
     killProcesses(edison,callback){
         edison.commands =
             [
-                "kill -9 $(pidof 'publisher')"
+                "kill -9 $(pidof 'node')"
             ];
 
         edison.onCommandComplete = function (command, response, sshObj) {
 
-            if (command == "kill -9 $(pidof 'publisher')") {
+            if (command == "kill -9 $(pidof 'node')") {
                 console.log("Publisher terminated on: " + edison.server.host);
                 callback(null);
             }

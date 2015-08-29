@@ -37,7 +37,7 @@ spouter = new Spouter(frequency);
 
 
 server.post("/",function(req,res,next){
-	if(req.params.start && req.params.activityName)
+	if(req.params.start && req.params.subActivityName && req.params.subActivitiesIteration)
 	{
         spouter.startRecordingActivity(req.params.subActivityName, req.params.subActivitiesIteration);
         res.send(200,{status : 200});

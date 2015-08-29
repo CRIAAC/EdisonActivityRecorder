@@ -3,6 +3,7 @@
   {
     "server": {
       "host": "192.168.1.101",
+      "mac": "fc:c2:de:32:6a:21",
       "port": 22,
       "userName": "root",
       "password": "edison"
@@ -11,7 +12,6 @@
     "file_to_transfer": "D:\\Users\\Baptiste\\Google Drive\\Edison\\RTIMULibCal\\Baptiste\\bras_droit\\RTIMULib.ini",
     "verbose": false,
     "debug": false,
-
     "msg":
     {
       "send": null
@@ -21,6 +21,7 @@
   {
     "server": {
       "host": "192.168.1.102",
+      "mac": "78:4b:87:ab:1e:0e",
       "port": 22,
       "userName": "root",
       "password": "edison"
@@ -29,7 +30,6 @@
     "file_to_transfer": "D:\\Users\\Baptiste\\Google Drive\\Edison\\RTIMULibCal\\Baptiste\\bras_gauche\\RTIMULib.ini",
     "verbose": false,
     "debug": false,
-
     "msg":
     {
       "send": null
@@ -40,15 +40,11 @@
     "host" : "127.0.0.1",
     "port" : "27017",
     "database" :"datasets",
-    "datacollection" : "MakeCoffee",
-    "rawcollection" : "MakeCoffee_raw"
+    "collection" : "MakeCoffee"
   },
-  "ntp":
-  {
-    "server": "192.168.1.5"
-  },
-  "recorder":
-  {
-    "server" : "192.168.1.5"
+  "server": "192.168.1.5",
+  "multicast" : {
+    "addr" : "224.52.53.100",
+    "port" : 52368
   }
 }
