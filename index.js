@@ -53,6 +53,17 @@ server.post("/",function(req,res,next){
     });
 });
 
+server.post("/change",function(req,res,next){
+    if(req.params.subActivityName && req.params.subActivitiesIteration)
+    {
+        spouter.changeSubActivity(req.params.subActivityName, req.params.subActivitiesIteration);
+        res.send(200,{status : 200});
+    }
+    res.json(400,{
+        message : "Bad request"
+    });
+});
+
 server.post("/delete/:id",function(req,res,next){
     spouter.deleteCollection(req.params.subactivities, req.params.id);
     res.send(200,{status : 200});

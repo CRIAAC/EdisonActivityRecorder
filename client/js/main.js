@@ -19,8 +19,9 @@ document.addEventListener('WebComponentsReady', function () {
 
         $(document).keypress(function (evt) {
             if (evt.keyCode == 32) {
-                saveActivity();
+
                 if (currentActivity == nbActivity) {
+                    saveActivity();
                     deleteLastIterationButton.disabled = false;
                     startIterationButton.disabled = false;
                     currentIteration++;
@@ -98,27 +99,42 @@ document.addEventListener('WebComponentsReady', function () {
             if (!startIterationButton.disabled) {
                 return;
             }
-            $.post("/", {start: true, subActivityName: activitiesArray[currentActivity], subActivitiesIteration: (currentIteration + 1)})
-                .done(function (data) {
-                    if (data.status == 200) {
-                        toast.text = "Record started";
-                        toast.show();
-                    }
-                    else {
+            if(currentActivity == 0){
+                $.post("/", {start: true, subActivityName: activitiesArray[currentActivity], subActivitiesIteration: (currentIteration + 1)})
+                    .done(function (data) {
+                        if (data.status == 200) {
+                            toast.text = "Record started";
+                            toast.show();
+                        }
+                        else {
+                            toast.text = "Record not started";
+                            toast.show();
+                        }
+                    }).fail(function () {
                         toast.text = "Record not started";
                         toast.show();
-                    }
-                }).fail(function () {
-                    toast.text = "Record not started";
-                    toast.show();
-                });
+                    });
+            } else {
+                $.post("/change", {subActivityName: activitiesArray[currentActivity], subActivitiesIteration: (currentIteration + 1)})
+                    .done(function (data) {
+                        if (data.status == 200) {
+                            toast.text = "Record started";
+                            toast.show();
+                        }
+                        else {
+                            toast.text = "Record not started";
+                            toast.show();
+                        }
+                    }).fail(function () {
+                        toast.text = "Record not started";
+                        toast.show();
+                    });
+            }
+
             currentActivity++;
         };
 
         var saveActivity = function () {
-            if (!startIterationButton.disabled) {
-                return;
-            }
             $.post("/", {stop: true})
                 .done(function (data) {
                     if (data.status == 200) {

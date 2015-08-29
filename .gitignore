@@ -79,3 +79,4 @@ client/bower_components
 
 # idea
 .idea
+.settings/launch.json

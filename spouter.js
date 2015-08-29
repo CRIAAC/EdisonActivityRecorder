@@ -7,24 +7,25 @@ var _mongoose = require('mongoose'),
     Kurunt = require("kurunt"),
     dgram = require('dgram'),
     _socket = dgram.createSocket('udp4');
+var NanoTimer = require('nanotimer');
 
 var DataSchema = new _mongoose.Schema({
-    subActivityName : {type: String, required: true},
-    index : {type : Number, required: true},
-    timestamp : {type: Date, required: true},
+    subActivityName : {type: String},
+    index : {type : Number},
+    timestamp : {type: Date},
     content : [{
-        yaw : {type : Number, required: true},
-        pitch : {type : Number, required: true},
-        roll : {type : Number, required: true},
-        accel_X : {type : Number, required: true},
-        accel_Y : {type : Number, required: true},
-        accel_Z : {type : Number, required: true},
-        gyro_X : {type : Number, required: true},
-        gyro_Y : {type : Number, required: true},
-        gyro_Z : {type : Number, required: true},
-        magneto_X : {type : Number, required: true},
-        magneto_Y : {type : Number, required: true},
-        magneto_Z : {type : Number, required: true}
+        yaw : {type : Number},
+        pitch : {type : Number},
+        roll : {type : Number},
+        accel_X : {type : Number},
+        accel_Y : {type : Number},
+        accel_Z : {type : Number},
+        gyro_X : {type : Number},
+        gyro_Y : {type : Number},
+        gyro_Z : {type : Number},
+        magneto_X : {type : Number},
+        magneto_Y : {type : Number},
+        magneto_Z : {type : Number}
     }]
 });
 DataSchema.set('collection', _config.mongo.collection);
@@ -40,11 +41,8 @@ class Spouter{
         });
         this.frequency = frequency;
         this.recording = false;
-        this.timer = undefined;
-        this.first = undefined;
+        this.timer = new NanoTimer();
         this.accumulatedData = {};
-        this.max = 0;
-        this.last = 0;
         _socket.on('listening', function () {
             var address = _socket.address();
             console.log('UDP Client listening on ' + address.address + ":" + address.port);
@@ -65,76 +63,9 @@ class Spouter{
     }
 
     onDataReceived(message){
-        var now =  _moment().toDate();
         if(!this.recording) return;
         message = message + "";
-
-        if(this.first == undefined){
-            this.last = now;
-            this.first = {
-                timestamp : now,
-                content : message
-            };
-        } else {
-            if((now - this.last) > this.max){
-                this.max = (now - this.last);
-            }
-            this.last = now;
-            if((now - this.first.timestamp) > 20){
-                // START ASYNC NON BLOQUANT
-                var results = [];
-                _config['edisons'].forEach(function(element){
-                    if(this.accumulatedData.hasOwnProperty(element.server.mac)){
-                        var explode = this.accumulatedData[element.server.mac].split(",");
-                        results.push({
-                            yaw : explode[1],
-                            pitch : explode[2],
-                            roll : explode[3],
-                            accel_X : explode[4],
-                            accel_Y : explode[5],
-                            accel_Z : explode[6],
-                            gyro_X : explode[7],
-                            gyro_Y : explode[8],
-                            gyro_Z : explode[9],
-                            magneto_X : explode[10],
-                            magneto_Y : explode[11],
-                            magneto_Z : explode[12]
-                        });
-                    } else {
-                        results.push({
-                            yaw : null,
-                            pitch : null,
-                            roll : null,
-                            accel_X : null,
-                            accel_Y : null,
-                            accel_Z : null,
-                            gyro_X : null,
-                            gyro_Y : null,
-                            gyro_Z : null,
-                            magneto_X : null,
-                            magneto_Y : null,
-                            magneto_Z : null
-                        });
-                    }
-                }.bind(this));
-                var data = new DataModel({
-                    subActivityName: this.currentSubActivityName,
-                    index: this.currentIteration,
-                    timestamp : this.first.timestamp,
-                    content : results
-                });
-                data.save(function(err){
-                    if(err) throw err;
-                });
-                // FIN ASYNC NON BLOQUANT
-                this.accumulatedData = {};
-                this.first = {
-                    timestamp : now,
-                    content : message
-                };
-            }
-            this.accumulatedData[message.split(",")[0]] = message;
-        }
+        this.accumulatedData[message.split(",")[0]] = message;
     }
 
     startRecordingActivity(activity, iteration){
@@ -144,21 +75,93 @@ class Spouter{
         this.currentSubActivityName = activity;
         this.currentIteration = iteration;
         this.recording = true;
-        //this.timer = setTimeout(this.saveData.bind(this, activity, iteration),this.frequency);
+        this.timer.setTimeout(this.saveData.bind(this, activity, iteration), "", this.frequency + "m");
+        //this.timer = setInterval(this.saveData.bind(this, activity, iteration), this.frequency);
+
+    }
+
+    changeSubActivity(activity, iteration){
+        if(activity == undefined || activity == ""){
+            throw "Activity undefined";
+        }
+        if(this.currentSubActivityName != undefined) {
+            DataModel.count({
+                subActivityName: this.currentSubActivityName,
+                index: this.currentIteration
+            }, function (err, res) {
+                if (err) throw err;
+                console.log(res);
+            });
+        }
+        this.currentSubActivityName = activity;
+        this.currentIteration = iteration;
     }
 
     stopRecording(){
         this.recording = false;
-        DataModel.count({subActivityName : this.currentSubActivityName, index : this.currentIteration}, function(err, res){
-            if(err) throw err;
-            console.log(res);
-        });
-        console.log("max = " + this.max);
-        this.first = undefined;
         this.accumulatedData = {};
-        this.max = 0;
-        this.last = 0;
-        //clearTimeout(this.timer);
+        this.timer.clearTimeout();
+        if(this.currentSubActivityName != undefined) {
+            DataModel.count({
+                subActivityName: this.currentSubActivityName,
+                index: this.currentIteration
+            }, function (err, res) {
+                if (err) throw err;
+                console.log(res);
+            });
+        }
+    }
+
+    saveData(activity, iteration){
+        var now = _moment().toDate();
+        this.timer.setTimeout(this.saveData.bind(this, activity, iteration), "", this.frequency + "m");
+        // START ASYNC NON BLOQUANT
+        var results = [];
+        _config['edisons'].forEach(function(element){
+            if(this.accumulatedData.hasOwnProperty(element.server.mac)){
+                var explode = this.accumulatedData[element.server.mac].split(",");
+                results.push({
+                    yaw : explode[1],
+                    pitch : explode[2],
+                    roll : explode[3],
+                    accel_X : explode[4],
+                    accel_Y : explode[5],
+                    accel_Z : explode[6],
+                    gyro_X : explode[7],
+                    gyro_Y : explode[8],
+                    gyro_Z : explode[9],
+                    magneto_X : explode[10],
+                    magneto_Y : explode[11],
+                    magneto_Z : explode[12]
+                });
+            } else {
+                results.push({
+                    yaw : null,
+                    pitch : null,
+                    roll : null,
+                    accel_X : null,
+                    accel_Y : null,
+                    accel_Z : null,
+                    gyro_X : null,
+                    gyro_Y : null,
+                    gyro_Z : null,
+                    magneto_X : null,
+                    magneto_Y : null,
+                    magneto_Z : null
+                });
+            }
+        }.bind(this));
+        var data = new DataModel({
+            subActivityName: this.currentSubActivityName,
+            index: this.currentIteration,
+            timestamp : now,
+            content : results
+        });
+        data.save(function(err){
+            if(err) throw err;
+        });
+        this.accumulatedData = {};
+        // FIN ASYNC NON BLOQUANT
     }
 
     /*saveData(name, index){
