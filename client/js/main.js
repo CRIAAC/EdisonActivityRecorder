@@ -56,7 +56,7 @@ document.addEventListener('WebComponentsReady', function () {
 
         deleteLastIterationButton.onclick = function(){
             if(currentIteration == 0) return;
-            $.post("/delete/"+currentIteration, {subactivities: activitiesArray})
+            $.post("/delete/"+currentIteration)
                 .done(function (data) {
                     if (data.status == 200) {
                         toast.text = "Delete success";

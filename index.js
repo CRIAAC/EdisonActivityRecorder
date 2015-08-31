@@ -64,8 +64,8 @@ server.post("/change",function(req,res,next){
     });
 });
 
-server.post("/delete/:id",function(req,res,next){
-    spouter.deleteCollection(req.params.subactivities, req.params.id);
+server.post("/delete/:index",function(req,res,next){
+    spouter.deleteCollection(req.params.index);
     res.send(200,{status : 200});
 });
 

@@ -54,12 +54,10 @@ class Spouter{
         _socket.bind(_config.multicast.port, _config.server);
     }
 
-    deleteCollection(subactivities, iteration){
-        for(var i = 0; i < subactivities.length; i++) {
-            DataSchema.remove({index: iteration}, function(err){
-                if(err) throw err;
-            });
-        }
+    deleteCollection(iteration){
+        DataModel.remove({index: iteration}, function(err){
+            if(err) throw err;
+        });
     }
 
     onDataReceived(message){
@@ -76,8 +74,6 @@ class Spouter{
         this.currentIteration = iteration;
         this.recording = true;
         this.timer.setTimeout(this.saveData.bind(this, activity, iteration), "", this.frequency + "m");
-        //this.timer = setInterval(this.saveData.bind(this, activity, iteration), this.frequency);
-
     }
 
     changeSubActivity(activity, iteration){
@@ -163,27 +159,6 @@ class Spouter{
         this.accumulatedData = {};
         // FIN ASYNC NON BLOQUANT
     }
-
-    /*saveData(name, index){
-        if(!this.recording) return;
-
-        //var now = _moment().toDate();
-        console.time("gets");
-        _async.parallel(this.getterArray, function(err, results){
-            console.timeEnd("gets");
-            var data = new DataModel({
-                subActivityName: name,
-                index: index,
-                timestamp : _moment().toDate(),
-                content : results
-            });
-            data.save(function(err){
-                if(err) throw err;
-            });
-            console("toto");
-        });
-        this.timer = setTimeout(this.saveData.bind(this, name, index),this.frequency);
-    }*/
 }
 
 module.exports = Spouter;

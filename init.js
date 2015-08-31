@@ -18,8 +18,6 @@ class Init{
      * @param {number} frequency
      */
     constructor(homeDir,server,frequency){
-
-        //this.homeDir = homeDir || "/root/CRIAAC/";
         this.homeDir = homeDir || "/home/edison/edisondatasender/";
         this.server = server || config.server;
         this.frequency = frequency || 20;
@@ -72,22 +70,24 @@ class Init{
     }
 
     runServer(edisons){
-        async.each(edisons,function(edison,callback){
-            edison.commands =
-                [
-                    "cd /home/edison/edisondatasender"
-                ];
-            edison.onCommandComplete = function (command, response, sshObj) {
+        this.killProcesses(edisons, function(){
+            async.each(edisons,function(edison,callback){
+                edison.commands =
+                    [
+                        "cd /home/edison/edisondatasender",
+                        "nohup ./edisondatasender.x &"
+                    ];
+                edison.onCommandComplete = function (command, response, sshObj) {
 
-                if (command == "cd /home/edison/edisondatasender") {
-                    console.log("server is running on: " + edison.server.host);
-                    callback(edison);
-                }
-            }.bind(this);
+                    if (command == "nohup ./edisondatasender.x &") {
+                        console.log("server is running on: " + edison.server.host);
+                        callback(edison);
+                    }
+                }.bind(this);
 
-            var SSH = new SSH2Shell(edison);
-            SSH.connect();
-
+                var SSH = new SSH2Shell(edison);
+                SSH.connect();
+            });
         },this.runREPL.bind(this,edisons));
     }
 
@@ -114,23 +114,26 @@ class Init{
         }, 2000);
     }
 
-    killProcesses(edison,callback){
-        edison.commands =
-            [
-                "kill -9 $(pidof 'node')"
-            ];
+    killProcesses(edisons,callback){
+        async.each(edisons,function(edison,callback) {
+            edison.commands =
+                [
+                    "kill -9 $(pidof 'edisondatasender.x')"
+                ];
 
-        edison.onCommandComplete = function (command, response, sshObj) {
+            edison.onCommandComplete = function (command, response, sshObj) {
 
-            if (command == "kill -9 $(pidof 'node')") {
-                console.log("Publisher terminated on: " + edison.server.host);
-                callback(null);
-            }
+                if (command == "kill -9 $(pidof 'edisondatasender.x')") {
+                    console.log("Server terminated on: " + edison.server.host);
+                    callback(null);
+                }
 
-        };
-
-        var SSH = new SSH2Shell(edison);
-        SSH.connect();
+            };
+            var SSH = new SSH2Shell(edison);
+            SSH.connect();
+        }, function(err){
+            callback();
+        });
     }
 }
 
