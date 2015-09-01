@@ -18,7 +18,7 @@ class Init{
      * @param {number} frequency
      */
     constructor(homeDir,server,frequency){
-        this.homeDir = homeDir || "/home/edison/edisondatasender/";
+        this.homeDir = homeDir || "/home/root/edisondatasender/";
         this.server = server || config.server;
         this.frequency = frequency || 20;
 
@@ -74,7 +74,7 @@ class Init{
             async.each(edisons,function(edison,callback){
                 edison.commands =
                     [
-                        "cd /home/edison/edisondatasender",
+                        "cd /home/root/edisondatasender",
                         "nohup ./edisondatasender.x &"
                     ];
                 edison.onCommandComplete = function (command, response, sshObj) {

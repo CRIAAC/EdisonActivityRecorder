@@ -106,6 +106,7 @@ class Spouter{
                 console.log(res);
             });
         }
+        DataModel.find({"content" : {"$elemMatch":{"yaw" : "null"}}, "index" : "50"});
     }
 
     saveData(activity, iteration){
