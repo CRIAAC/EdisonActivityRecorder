@@ -1,36 +1,36 @@
 "use strict";
-
 var _mongoose = require('mongoose'),
-    _async = require("async"),
-    _moment = require("moment"),
-    _config = require("./config.json"),
-    Kurunt = require("kurunt"),
-    dgram = require('dgram'),
-    _socket = dgram.createSocket('udp4');
-var NanoTimer = require('nanotimer');
-
-var DataSchema = new _mongoose.Schema({
+    _config = require("./config.js"),
+    WebSocket = require("ws").Server;
+var DescriptionSchema = new _mongoose.Schema({
     subActivityName : {type: String},
     index : {type : Number},
-    timestamp : {type: Date},
-    content : [{
-        yaw : {type : Number},
-        pitch : {type : Number},
-        roll : {type : Number},
-        accel_X : {type : Number},
-        accel_Y : {type : Number},
-        accel_Z : {type : Number},
-        gyro_X : {type : Number},
-        gyro_Y : {type : Number},
-        gyro_Z : {type : Number},
-        magneto_X : {type : Number},
-        magneto_Y : {type : Number},
-        magneto_Z : {type : Number}
-    }]
+    start : {type: Number},
+    end : {type: Number}
 });
-DataSchema.set('collection', _config.mongo.collection);
-var DataModel = _mongoose.model('Data', DataSchema);
-
+var DataSchema = new _mongoose.Schema({
+    mac : {type : String},
+    timestamp : {type: Number},
+    accel_X : {type : Number},
+    accel_Y : {type : Number},
+    accel_Z : {type : Number},
+    gyro_X : {type : Number},
+    gyro_Y : {type : Number},
+    gyro_Z : {type : Number},
+    magneto_X : {type : Number},
+    magneto_Y : {type : Number},
+    magneto_Z : {type : Number}
+});
+var TimeSchema = new _mongoose.Schema({
+    mac : {type : String},
+    timestamp : {type: Number}
+});
+DescriptionSchema.set('collection', _config.mongo.collection + "_descriptions");
+DataSchema.set('collection', _config.mongo.collection + "_datas");
+TimeSchema.set('collection', _config.mongo.collection + "_times");
+var DescriptionModel = _mongoose.model('Descriptions', DescriptionSchema);
+var DataModel = _mongoose.model('Datas', DataSchema);
+var TimeModel = _mongoose.model('Times', TimeSchema);
 class Spouter{
 
     constructor(frequency){
@@ -41,29 +41,75 @@ class Spouter{
         });
         this.frequency = frequency;
         this.recording = false;
-        this.timer = new NanoTimer();
-        this.accumulatedData = {};
-        _socket.on('listening', function () {
-            var address = _socket.address();
-            console.log('UDP Client listening on ' + address.address + ":" + address.port);
-            _socket.setBroadcast(true);
-            _socket.setMulticastTTL(128);
-            _socket.addMembership(_config.multicast.addr, _config.server);
-        });
-        _socket.on('message', this.onDataReceived.bind(this));
-        _socket.bind(_config.multicast.port, _config.server);
+        this.startTime = null;
+        this.edisonsTime = {};
+        this.stopTime = null;
+        this.server = new WebSocket({"host":_config.server, "port":_config.websocket}, function(){
+            console.log("Server start on ws://"+_config.server+":"+_config.websocket);
+        }).on("error", function(e){
+                console.log("Server error " + e);
+            }).on('connection', function (ws) {
+                ws.on('message', this.onDataReceived.bind(this));
+            }.bind(this));
     }
 
     deleteCollection(iteration){
-        DataModel.remove({index: iteration}, function(err){
-            if(err) throw err;
+        DescriptionModel.find({index: iteration}, {start:1, end:1}).sort({_id:-1}).exec(function(err, docs){
+            if(err) console.log("delete error : " + err);
+            docs.forEach(function(elem){
+                DataModel.remove({timestamp : {$gte: elem.start, $lte: elem.end}}, function(err){
+                    if(err) throw err;
+                    DescriptionModel.remove({index: iteration}, function(err){
+                        if(err) console.log("delete error : " + err);
+                    });
+                });
+            });
         });
     }
 
     onDataReceived(message){
         if(!this.recording) return;
-        message = message + "";
-        this.accumulatedData[message.split(",")[0]] = message;
+
+        var data = message.split(',');
+        data.pop();
+        var mac = data[1];
+
+        if(this.edisonsTime.hasOwnProperty(mac)) {
+            this.edisonsTime[mac] += this.frequency;
+        } else {
+            this.edisonsTime[mac] = this.startTime;
+        }
+        if(this.stopTime != null){
+            var nbEdisonDone = 0;
+            for(var key in this.edisonsTime){
+                if(this.stopTime < this.edisonsTime[key]) nbEdisonDone++;
+            }
+            if(nbEdisonDone == this.edisonsTime.length) this.recording = false;
+            if(this.stopTime < this.edisonsTime[mac]) return;
+        }
+        var timeToSave = new TimeModel({
+            mac : mac,
+            timestamp: data[0]
+        });
+        timeToSave.save(function (err) {
+            if(err) console.log("time save error : " + err);
+        });
+        var toSave = new DataModel({
+            mac : mac,
+            timestamp : this.edisonsTime[mac],
+            accel_X : data[2],
+            accel_Y : data[3],
+            accel_Z : data[4],
+            gyro_X : data[5],
+            gyro_Y : data[6],
+            gyro_Z : data[7],
+            magneto_X : data[8],
+            magneto_Y : data[9],
+            magneto_Z : data[10]
+        });
+        toSave.save(function (err) {
+            if(err) console.log("data save error : " + err);
+        });
     }
 
     startRecordingActivity(activity, iteration){
@@ -72,8 +118,9 @@ class Spouter{
         }
         this.currentSubActivityName = activity;
         this.currentIteration = iteration;
+        this.startTime = new Date().getTime();
+        this.currentSubActivityStart = new Date().getTime();
         this.recording = true;
-        this.timer.setTimeout(this.saveData.bind(this, activity, iteration), "", this.frequency + "m");
     }
 
     changeSubActivity(activity, iteration){
@@ -81,84 +128,32 @@ class Spouter{
             throw "Activity undefined";
         }
         if(this.currentSubActivityName != undefined) {
-            DataModel.count({
+            var data = new DescriptionModel({
                 subActivityName: this.currentSubActivityName,
-                index: this.currentIteration
-            }, function (err, res) {
-                if (err) throw err;
-                console.log(res);
+                index: this.currentIteration,
+                start: this.currentSubActivityStart,
+                end: new Date().getTime()
             });
+            data.save();
         }
         this.currentSubActivityName = activity;
         this.currentIteration = iteration;
+        this.currentSubActivityStart = new Date().getTime();
     }
 
     stopRecording(){
         this.recording = false;
-        this.accumulatedData = {};
-        this.timer.clearTimeout();
         if(this.currentSubActivityName != undefined) {
-            DataModel.count({
+            var data = new DescriptionModel({
                 subActivityName: this.currentSubActivityName,
-                index: this.currentIteration
-            }, function (err, res) {
-                if (err) throw err;
-                console.log(res);
+                index: this.currentIteration,
+                start: this.currentSubActivityStart,
+                end: new Date().getTime()
             });
+            data.save();
         }
-        DataModel.find({"content" : {"$elemMatch":{"yaw" : "null"}}, "index" : "50"});
-    }
-
-    saveData(activity, iteration){
-        var now = _moment().toDate();
-        this.timer.setTimeout(this.saveData.bind(this, activity, iteration), "", this.frequency + "m");
-        // START ASYNC NON BLOQUANT
-        var results = [];
-        _config['edisons'].forEach(function(element){
-            if(this.accumulatedData.hasOwnProperty(element.server.mac)){
-                var explode = this.accumulatedData[element.server.mac].split(",");
-                results.push({
-                    yaw : explode[1],
-                    pitch : explode[2],
-                    roll : explode[3],
-                    accel_X : explode[4],
-                    accel_Y : explode[5],
-                    accel_Z : explode[6],
-                    gyro_X : explode[7],
-                    gyro_Y : explode[8],
-                    gyro_Z : explode[9],
-                    magneto_X : explode[10],
-                    magneto_Y : explode[11],
-                    magneto_Z : explode[12]
-                });
-            } else {
-                results.push({
-                    yaw : null,
-                    pitch : null,
-                    roll : null,
-                    accel_X : null,
-                    accel_Y : null,
-                    accel_Z : null,
-                    gyro_X : null,
-                    gyro_Y : null,
-                    gyro_Z : null,
-                    magneto_X : null,
-                    magneto_Y : null,
-                    magneto_Z : null
-                });
-            }
-        }.bind(this));
-        var data = new DataModel({
-            subActivityName: this.currentSubActivityName,
-            index: this.currentIteration,
-            timestamp : now,
-            content : results
-        });
-        data.save(function(err){
-            if(err) throw err;
-        });
-        this.accumulatedData = {};
-        // FIN ASYNC NON BLOQUANT
+        this.stopTime = new Date().getTime();
+        this.edisonsTime = {};
     }
 }
 

@@ -1,16 +1,10 @@
 "use strict";
-var restify = require('restify');
-var fs = require('fs');
-
-var Init = require("./init.js");
-var Spouter = require("./spouter");
-
-var eventEmitter = require("events").EventEmitter;
-
-
-var init = new Init();
-var spouter;
-var frequency = 20;
+var restify = require('restify'),
+    fs = require('fs'),
+    Spouter = require("./spouter"),
+    eventEmitter = require("events").EventEmitter,
+    frequency = require("./config").frequency,
+    spouter = new Spouter(frequency);
 
 var server = restify.createServer({
   name: 'EdisonActivityRecorder',
@@ -18,7 +12,6 @@ var server = restify.createServer({
     key: fs.readFileSync('./ssl/server.key'),
     certificate: fs.readFileSync('./ssl/server.crt')
 });
-
 
 server.use(restify.acceptParser(server.acceptable));
 server.use(restify.queryParser());
@@ -32,8 +25,6 @@ server.get("/",function(req,res,next){
 });
 
 server.get(/\/(css|js|img|bower_components)\/?.*/, restify.serveStatic({directory: './client/'}));
-
-spouter = new Spouter(frequency);
 
 
 server.post("/",function(req,res,next){
