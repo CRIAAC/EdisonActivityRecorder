@@ -121,6 +121,7 @@ class Spouter{
         this.startTime = new Date().getTime();
         this.currentSubActivityStart = new Date().getTime();
         this.recording = true;
+        this.stopTime = null;
     }
 
     changeSubActivity(activity, iteration){
