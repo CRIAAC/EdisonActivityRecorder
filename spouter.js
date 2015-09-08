@@ -46,10 +46,15 @@ class Spouter{
         this.stopTime = null;
         this.server = new WebSocket({"host":_config.server, "port":_config.websocket}, function(){
             console.log("Server start on ws://"+_config.server+":"+_config.websocket);
-        }).on("error", function(e){
-                console.log("Server error " + e);
-            }).on('connection', function (ws) {
+        });
+        this.server.on('connection', function (ws) {
                 ws.on('message', this.onDataReceived.bind(this));
+                ws.on('close', function close() {
+                    console.log('disconnected');
+                });
+                ws.on("error", function(e){
+                    console.log("Server error " + e);
+                });
             }.bind(this));
     }
 
@@ -82,11 +87,17 @@ class Spouter{
         if(this.stopTime != null){
             var nbEdisonDone = 0;
             for(var key in this.edisonsTime){
-                if(this.stopTime < this.edisonsTime[key]) nbEdisonDone++;
+                if(this.edisonsTime.hasOwnProperty(key)){
+                    if(this.stopTime <= this.edisonsTime[key]) nbEdisonDone++;
+                }
             }
-            if(nbEdisonDone == this.edisonsTime.length) this.recording = false;
+            if(nbEdisonDone == Object.keys(this.edisonsTime).length) {
+                this.recording = false;
+                console.log("All data received for iteration " + this.currentIteration + ".");
+            }
             if(this.stopTime < this.edisonsTime[mac]) return;
         }
+
         var timeToSave = new TimeModel({
             mac : mac,
             timestamp: data[0]
@@ -120,6 +131,7 @@ class Spouter{
         this.currentIteration = iteration;
         this.startTime = new Date().getTime();
         this.currentSubActivityStart = new Date().getTime();
+        this.edisonsTime = {};
         this.recording = true;
         this.stopTime = null;
     }
@@ -136,6 +148,12 @@ class Spouter{
                 end: new Date().getTime()
             });
             data.save();
+            DataModel.find({mac: _config.mac.edison1}).count(function(err, count){
+                console.log("Edison1 : " + count);
+            });
+            DataModel.find({mac: _config.mac.edison2}).count(function(err, count){
+                console.log("Edison2 : " + count);
+            });
         }
         this.currentSubActivityName = activity;
         this.currentIteration = iteration;
@@ -143,7 +161,6 @@ class Spouter{
     }
 
     stopRecording(){
-        this.recording = false;
         if(this.currentSubActivityName != undefined) {
             var data = new DescriptionModel({
                 subActivityName: this.currentSubActivityName,
@@ -154,7 +171,6 @@ class Spouter{
             data.save();
         }
         this.stopTime = new Date().getTime();
-        this.edisonsTime = {};
     }
 }
 

@@ -3,7 +3,7 @@ function resample(){
 	for(var i = 0; i < subActivities.length; i++){
 		var mac = db.MakeCoffee_datas.distinct("mac");
 		for(var j = 0; j < mac.length; j++){
-			var datas = db.MakeCoffee_datas.find({mac: mac[j],timestamp: {$lte : subActivities[i].end, $gte : subActivities[i].start}}, {_id:0, __v:0}).sort({timestamp: 1, mac:-1}).toArray();
+			var datas = db.MakeCoffee_datas.find({mac: mac[j],timestamp: {$lte : subActivities[i].end, $gte : subActivities[i].start}}, {_id:0, __v:0}).sort({timestamp: 1}).toArray();
 			var size = datas.length;
 			if(size%2 != 0){
 				size--;
@@ -94,3 +94,17 @@ function do_all(){
 }
 
 do_all();
+
+/*
+
+{
+                "subActivityName" : "CloseWaterReservoirLids",
+                "index" : 30,
+                "start" : 1441485956441,
+                "end" : 1441485959296
+        }
+		1 44 14 85 95 64 41
+		1 44 14 85 95 58 16
+		"fc:c2:de:32:6a:21"
+		"78:4b:87:ab:1e:0e"
+db.MakeCoffee_datas.find({mac: "fc:c2:de:32:6a:21"}, {_id:0, __v:0}).sort({timestamp: -1}).toArray();*/
